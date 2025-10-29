@@ -1,16 +1,14 @@
 import { GoogleGenAI, Modality } from "@google/genai";
 import { PostTone } from '../types';
 
-const getAi = () => {
-  // Defer API key check and client initialization to avoid crashing the app on load.
-  // This is crucial for browser environments like Vercel where `process` is not defined.
-  if (typeof process === 'undefined' || !process.env.API_KEY) {
-    throw new Error("La variable de entorno API_KEY no está configurada o no es accesible. Por favor, asegúrate de que esté correctamente configurada en tu entorno de Vercel.");
+const getAi = (apiKey: string) => {
+  if (!apiKey) {
+    throw new Error("La clave de API de Google Gemini no está configurada. Por favor, configúrala en los ajustes.");
   }
-  return new GoogleGenAI({ apiKey: process.env.API_KEY });
+  return new GoogleGenAI({ apiKey });
 };
 
-export const generatePostContent = async (topic: string, tone: PostTone, cta: string): Promise<string> => {
+export const generatePostContent = async (topic: string, tone: PostTone, cta: string, apiKey: string): Promise<string> => {
   const ctaInstruction = cta ? `Integra de forma natural la siguiente llamada a la acción: '${cta}'.` : '';
 
   const prompt = `
@@ -29,7 +27,7 @@ export const generatePostContent = async (topic: string, tone: PostTone, cta: st
     `;
 
   try {
-    const ai = getAi();
+    const ai = getAi(apiKey);
     const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash',
         contents: prompt,
@@ -37,16 +35,16 @@ export const generatePostContent = async (topic: string, tone: PostTone, cta: st
     return response.text;
   } catch (error) {
     console.error("Error generating content with Gemini API:", error);
-    if (error instanceof Error && error.message.includes("API_KEY")) {
-        throw error; // Propagate the specific API key error message
+    if (error instanceof Error && error.message.includes("API")) {
+        throw error;
     }
-    throw new Error("No se pudo generar el contenido. Por favor, inténtalo de nuevo.");
+    throw new Error("No se pudo generar el contenido. Verifica tu API Key o inténtalo de nuevo.");
   }
 };
 
-export const generatePostImage = async (prompt: string): Promise<string> => {
+export const generatePostImage = async (prompt: string, apiKey: string): Promise<string> => {
   try {
-    const ai = getAi();
+    const ai = getAi(apiKey);
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash-image',
       contents: {
@@ -67,9 +65,9 @@ export const generatePostImage = async (prompt: string): Promise<string> => {
 
   } catch (error) {
     console.error("Error generating image with Gemini API:", error);
-    if (error instanceof Error && error.message.includes("API_KEY")) {
-        throw error; // Propagate the specific API key error message
+    if (error instanceof Error && error.message.includes("API")) {
+        throw error;
     }
-    throw new Error("No se pudo generar la imagen. Por favor, inténtalo de nuevo.");
+    throw new Error("No se pudo generar la imagen. Verifica tu API Key o inténtalo de nuevo.");
   }
 };
