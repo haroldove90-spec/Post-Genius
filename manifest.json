@@ -1,0 +1,27 @@
+{
+  "name": "Post Genius",
+  "short_name": "Post Genius",
+  "description": "An application for Facebook Fanpage administrators to generate engaging social media posts using AI. Describe your topic, choose a tone, and get ready-to-publish content instantly.",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#4f46e5",
+  "icons": [
+    {
+      "src": "/vite.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/vite.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "/vite.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml"
+    }
+  ]
+}
