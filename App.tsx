@@ -203,7 +203,7 @@ const App: React.FC = () => {
     }
 
     window.fbAsyncInit = function() {
-      window.FB.init({ appId: facebookAppId, cookie: true, xfbml: true, version: 'v19.0' });
+      window.FB.init({ appId: facebookAppId, cookie: true, xfbml: true, version: 'v18.0' });
       setIsFbSdkLoaded(true);
       window.FB.getLoginStatus((response: any) => {
         if (response.status === 'connected') {
