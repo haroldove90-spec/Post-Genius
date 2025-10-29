@@ -192,6 +192,29 @@ const App: React.FC = () => {
     localStorage.setItem('scheduledPosts', JSON.stringify(scheduledPosts));
   }, [scheduledPosts]);
 
+  const fetchUserDataAndPages = useCallback(() => {
+    window.FB.api('/me', { fields: 'name' }, (response: any) => {
+      if (response && !response.error) setUserName(response.name);
+    });
+    window.FB.api('/me/accounts', (response: any) => {
+      if (response && response.data) setPages(response.data);
+    });
+  }, []);
+
+  // This function handles the response from Facebook's login status checks.
+  // It centralizes the logic for updating the app's state based on whether
+  // the user is connected or not, inspired by the user's provided `checkLoginState` snippet.
+  const statusChangeCallback = useCallback((response: any) => {
+    if (response.status === 'connected') {
+      setIsLoggedIn(true);
+      fetchUserDataAndPages();
+    } else {
+      setIsLoggedIn(false);
+      setUserName('');
+      setPages([]);
+    }
+  }, [fetchUserDataAndPages]);
+
   // Initialize Facebook SDK when facebookAppId is set
   useEffect(() => {
     if (!facebookAppId) {
@@ -204,14 +227,11 @@ const App: React.FC = () => {
 
     window.fbAsyncInit = function() {
       window.FB.init({ appId: facebookAppId, cookie: true, xfbml: true, version: 'v18.0' });
+      window.FB.AppEvents.logPageView();
       setIsFbSdkLoaded(true);
+      // Check the user's login status upon initialization.
       window.FB.getLoginStatus((response: any) => {
-        if (response.status === 'connected') {
-          setIsLoggedIn(true);
-          fetchUserDataAndPages();
-        } else {
-          setIsLoggedIn(false);
-        }
+        statusChangeCallback(response);
       });
     };
     
@@ -219,7 +239,7 @@ const App: React.FC = () => {
     if (!document.getElementById(scriptId)) {
         const script = document.createElement('script');
         script.id = scriptId;
-        script.src = "https://connect.facebook.net/es_LA/sdk.js";
+        script.src = "https://connect.facebook.net/en_US/sdk.js";
         script.async = true;
         script.defer = true;
         script.crossOrigin = 'anonymous';
@@ -227,7 +247,7 @@ const App: React.FC = () => {
     } else if (window.FB) {
         window.fbAsyncInit();
     }
-  }, [facebookAppId]);
+  }, [facebookAppId, statusChangeCallback]);
 
   const handleSaveConfig = (newApiKey: string, newFbAppId: string) => {
       setApiKey(newApiKey);
@@ -239,24 +259,24 @@ const App: React.FC = () => {
       setIsConfigModalOpen(false);
       setError(null);
   };
-  
-  const fetchUserDataAndPages = () => {
-    window.FB.api('/me', { fields: 'name' }, (response: any) => {
-      if (response && !response.error) setUserName(response.name);
-    });
-    window.FB.api('/me/accounts', (response: any) => {
-      if (response && response.data) setPages(response.data);
-    });
-  };
-  
-  const handleLogin = () => {
+    
+  /*
+    A successful Facebook login response object has this structure:
+    {
+        status: 'connected',
+        authResponse: {
+            accessToken: '...',
+            expiresIn:'...',
+            signedRequest:'...',
+            userID:'...'
+        }
+    }
+  */
+  const handleLogin = useCallback(() => {
     window.FB.login((response: any) => {
-      if (response.authResponse) {
-        setIsLoggedIn(true);
-        fetchUserDataAndPages();
-      }
+      statusChangeCallback(response);
     }, { scope: 'public_profile,pages_show_list,pages_manage_posts' });
-  };
+  }, [statusChangeCallback]);
   
   const handlePageSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setSelectedPageId(e.target.value);
