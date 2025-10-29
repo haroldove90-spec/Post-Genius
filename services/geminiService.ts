@@ -1,11 +1,14 @@
 import { GoogleGenAI, Modality } from "@google/genai";
 import { PostTone } from '../types';
 
-if (!process.env.API_KEY) {
-  throw new Error("API_KEY environment variable is not set.");
-}
-
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+const getAi = () => {
+  // Defer API key check and client initialization to avoid crashing the app on load.
+  // This is crucial for browser environments like Vercel where `process` is not defined.
+  if (typeof process === 'undefined' || !process.env.API_KEY) {
+    throw new Error("La variable de entorno API_KEY no está configurada o no es accesible. Por favor, asegúrate de que esté correctamente configurada en tu entorno de Vercel.");
+  }
+  return new GoogleGenAI({ apiKey: process.env.API_KEY });
+};
 
 export const generatePostContent = async (topic: string, tone: PostTone, cta: string): Promise<string> => {
   const ctaInstruction = cta ? `Integra de forma natural la siguiente llamada a la acción: '${cta}'.` : '';
@@ -26,6 +29,7 @@ export const generatePostContent = async (topic: string, tone: PostTone, cta: st
     `;
 
   try {
+    const ai = getAi();
     const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash',
         contents: prompt,
@@ -33,12 +37,16 @@ export const generatePostContent = async (topic: string, tone: PostTone, cta: st
     return response.text;
   } catch (error) {
     console.error("Error generating content with Gemini API:", error);
+    if (error instanceof Error && error.message.includes("API_KEY")) {
+        throw error; // Propagate the specific API key error message
+    }
     throw new Error("No se pudo generar el contenido. Por favor, inténtalo de nuevo.");
   }
 };
 
 export const generatePostImage = async (prompt: string): Promise<string> => {
   try {
+    const ai = getAi();
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash-image',
       contents: {
@@ -59,6 +67,9 @@ export const generatePostImage = async (prompt: string): Promise<string> => {
 
   } catch (error) {
     console.error("Error generating image with Gemini API:", error);
+    if (error instanceof Error && error.message.includes("API_KEY")) {
+        throw error; // Propagate the specific API key error message
+    }
     throw new Error("No se pudo generar la imagen. Por favor, inténtalo de nuevo.");
   }
 };
